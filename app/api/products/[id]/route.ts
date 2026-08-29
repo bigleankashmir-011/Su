@@ -27,6 +27,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       size: body.size || null,
       stock: Number(body.stock) || 0,
       imageUrl: body.imageUrl || null,
+      images: body.images || [],
       categoryId: body.categoryId,
     },
   });
@@ -39,4 +40,4 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
 
   await prisma.product.delete({ where: { id: params.id } });
   return NextResponse.json({ ok: true });
-                          }
+    }
