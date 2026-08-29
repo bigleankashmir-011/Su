@@ -45,6 +45,7 @@ model Product {
   size        String?
   stock       Int         @default(0)
   imageUrl    String?
+  images      String[]    @default([])
   categoryId  String
   category    Category    @relation(fields: [categoryId], references: [id])
   orderItems  OrderItem[]
