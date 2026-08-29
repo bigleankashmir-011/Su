@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 type Product = {
   id: string; name: string; description: string | null; price: number;
@@ -7,6 +8,11 @@ type Product = {
   category: { name: string; slug: string };
 };
 type CartItem = { id: string; name: string; price: number; qty: number; image: string | null };
+
+function loadCart(): CartItem[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem("bl_cart") || "[]"); } catch { return []; }
+}
 
 export default function StorePage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -18,7 +24,9 @@ export default function StorePage() {
 
   useEffect(() => {
     fetch("/api/products").then(r => r.json()).then(setProducts).catch(() => {});
+    setCart(loadCart());
   }, []);
+  useEffect(() => { localStorage.setItem("bl_cart", JSON.stringify(cart)); }, [cart]);
 
   const categories = Array.from(new Set(products.map(p => p.category?.name).filter(Boolean)));
   const shown = activeCat === "all" ? products : products.filter(p => p.category?.name === activeCat);
@@ -45,10 +53,7 @@ export default function StorePage() {
     await fetch("/api/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        items: cart.map(i => ({ productId: i.id, quantity: i.qty })),
-      }),
+      body: JSON.stringify({ ...form, items: cart.map(i => ({ productId: i.id, quantity: i.qty })) }),
     });
     setPlacing(false);
     setCart([]);
@@ -57,7 +62,6 @@ export default function StorePage() {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-[#0F0F10] pb-24" style={{ fontFamily: "system-ui, sans-serif" }}>
-      {/* header */}
       <header className="sticky top-0 z-50 bg-white border-b border-[#ECECEE]">
         <div className="flex items-center justify-between px-4 pt-3.5 pb-2.5">
           <div className="flex items-center gap-2">
@@ -75,7 +79,6 @@ export default function StorePage() {
         <div className="mx-4 mb-3.5 bg-[#FAFAFA] border border-[#ECECEE] rounded-[10px] px-3.5 py-2.5 text-[13px] text-[#6B6B72]">🔍 Search whey, creatine, gainers...</div>
       </header>
 
-      {/* event banner */}
       <div className="mx-4 mt-3.5 rounded-2xl bg-gradient-to-br from-[#141414] to-black p-[18px] relative overflow-hidden">
         <span className="inline-flex items-center gap-1 bg-[#FFB800] text-black text-[9.5px] font-extrabold tracking-wider px-2.5 py-1 rounded-full">📅 UPCOMING EVENT</span>
         <p className="text-white text-lg font-black mt-2.5 leading-tight">Grand Store Anniversary Sale</p>
@@ -83,7 +86,6 @@ export default function StorePage() {
         <button className="inline-block mt-3 bg-[#FFB800] text-black font-extrabold text-xs px-4 py-2 rounded-full">Notify Me</button>
       </div>
 
-      {/* trust strip */}
       <div className="grid grid-cols-4 border-t border-b border-[#ECECEE] mt-4">
         {[["🛡️","Safe & Secure Payments"],["🚚","Fast Delivery Pan-India"],["✅","Authenticity Guaranteed"],["↩️","Easy Replacement"]].map(([ic,label],i)=>(
           <div key={i} className={`py-4 px-1.5 text-center ${i<3?"border-r border-[#ECECEE]":""}`}>
@@ -93,7 +95,6 @@ export default function StorePage() {
         ))}
       </div>
 
-      {/* category pills */}
       <div className="flex items-center px-4 pt-[22px] pb-3">
         <span className="w-1 h-[15px] bg-[#FFB800] rounded mr-2"></span>
         <h2 className="text-[17px] font-black">Shop by Category</h2>
@@ -105,7 +106,6 @@ export default function StorePage() {
         ))}
       </div>
 
-      {/* products */}
       <div className="flex items-center px-4 pt-2 pb-3">
         <span className="w-1 h-[15px] bg-[#FFB800] rounded mr-2"></span>
         <h2 className="text-[17px] font-black">Products</h2>
@@ -113,19 +113,21 @@ export default function StorePage() {
       <div className="grid grid-cols-2 gap-3 px-4">
         {shown.map(p => (
           <div key={p.id} className="bg-white border border-[#ECECEE] rounded-[14px] p-3 relative">
-            <div className="h-[100px] flex items-center justify-center mb-2 bg-[#FAFAFA] rounded-[10px] overflow-hidden">
-              {p.imageUrl ? <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" /> :
-                <div className="w-11 h-[66px] rounded-[9px] relative" style={{background:"linear-gradient(155deg,#2a2a2c,#111112)"}}>
-                  <div className="absolute left-1/2 -top-1.5 -translate-x-1/2 w-9 h-2 rounded" style={{background:"#FFB800"}}></div>
-                </div>}
-            </div>
-            <p className="text-[9px] text-[#6B6B72] uppercase font-bold">{p.category?.name}</p>
-            <p className="text-[13px] font-extrabold mt-0.5 leading-tight">{p.name}</p>
-            <p className="text-[10px] text-[#6B6B72] mt-0.5">{p.size}</p>
-            <div className="flex items-baseline gap-1.5 mt-1.5">
-              <span className="text-[15px] font-black">₹{p.price}</span>
-              {p.mrp && <span className="text-[11px] text-[#6B6B72] line-through">₹{p.mrp}</span>}
-            </div>
+            <Link href={`/product/${p.id}`}>
+              <div className="h-[100px] flex items-center justify-center mb-2 bg-[#FAFAFA] rounded-[10px] overflow-hidden">
+                {p.imageUrl ? <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" /> :
+                  <div className="w-11 h-[66px] rounded-[9px] relative" style={{background:"linear-gradient(155deg,#2a2a2c,#111112)"}}>
+                    <div className="absolute left-1/2 -top-1.5 -translate-x-1/2 w-9 h-2 rounded" style={{background:"#FFB800"}}></div>
+                  </div>}
+              </div>
+              <p className="text-[9px] text-[#6B6B72] uppercase font-bold">{p.category?.name}</p>
+              <p className="text-[13px] font-extrabold mt-0.5 leading-tight">{p.name}</p>
+              <p className="text-[10px] text-[#6B6B72] mt-0.5">{p.size}</p>
+              <div className="flex items-baseline gap-1.5 mt-1.5">
+                <span className="text-[15px] font-black">₹{p.price}</span>
+                {p.mrp && <span className="text-[11px] text-[#6B6B72] line-through">₹{p.mrp}</span>}
+              </div>
+            </Link>
             <div className="flex flex-col gap-1.5 mt-2.5">
               <button onClick={()=>addToCart(p)} className="bg-white border-[1.4px] border-black text-black text-[11px] font-extrabold py-2 rounded-lg">ADD TO CART</button>
               <button onClick={()=>{addToCart(p);setDrawer("checkout");}} className="bg-[#FFB800] text-black text-[11px] font-extrabold py-2 rounded-lg">BUY NOW</button>
@@ -135,7 +137,6 @@ export default function StorePage() {
         {shown.length===0 && <p className="col-span-2 text-center text-[#6B6B72] text-sm py-10">No products in this category yet.</p>}
       </div>
 
-      {/* footer */}
       <footer className="px-4 pt-7 pb-24 border-t border-[#ECECEE] mt-6 bg-[#FAFAFA]">
         <p className="font-black text-sm mb-2">BIG LEAN <span className="text-[#8a5c00]">KASHMIR</span></p>
         <p className="text-[11.5px] text-[#6B6B72] leading-relaxed">Genuine fitness and bodybuilding supplements. Visit us in Kulgam or order online — delivered anywhere in India.</p>
@@ -153,7 +154,6 @@ export default function StorePage() {
         </div>
       </footer>
 
-      {/* floating cart bar */}
       {cartCount > 0 && drawer==="closed" && (
         <button onClick={()=>setDrawer("cart")} className="fixed bottom-3.5 left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-[488px] bg-black text-[#FFB800] rounded-2xl px-[18px] py-3.5 flex items-center justify-between font-extrabold text-[13px] z-[60] shadow-xl">
           <span>{cartCount} item{cartCount>1?"s":""} in cart</span>
@@ -161,7 +161,6 @@ export default function StorePage() {
         </button>
       )}
 
-      {/* drawer */}
       {drawer !== "closed" && (
         <div className="fixed inset-0 z-[70]">
           <div className="absolute inset-0 bg-black/40" onClick={()=>setDrawer("closed")}></div>
@@ -229,4 +228,4 @@ export default function StorePage() {
       )}
     </div>
   );
-      }
+            }
