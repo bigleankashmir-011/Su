@@ -15,6 +15,7 @@ type Props = {
     size: string | null;
     stock: number;
     imageUrl: string | null;
+    images: string[];
     categoryId: string;
   };
 };
@@ -28,13 +29,42 @@ export default function ProductForm({ categories, initial }: Props) {
     mrp: initial?.mrp ?? 0,
     size: initial?.size || "",
     stock: initial?.stock ?? 0,
-    imageUrl: initial?.imageUrl || "",
     categoryId: initial?.categoryId || categories[0]?.id || "",
   });
+  const [images, setImages] = useState<string[]>(initial?.images || []);
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   function update(field: string, value: any) {
     setForm((f) => ({ ...f, [field]: value }));
+  }
+
+  async function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    setError("");
+
+    const uploaded: string[] = [];
+    for (const file of Array.from(files)) {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (res.ok) {
+        uploaded.push(data.url);
+      } else {
+        setError(data.error || "Upload failed for one of the images");
+      }
+    }
+    setImages((prev) => [...prev, ...uploaded]);
+    setUploading(false);
+    e.target.value = "";
+  }
+
+  function removeImage(url: string) {
+    setImages((prev) => prev.filter((i) => i !== url));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -45,7 +75,7 @@ export default function ProductForm({ categories, initial }: Props) {
     await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, images, imageUrl: images[0] || null }),
     });
     setSaving(false);
     router.push("/admin/products");
@@ -93,9 +123,25 @@ export default function ProductForm({ categories, initial }: Props) {
       </div>
 
       <div>
-        <label className="block text-xs text-white/50 mb-1">Image URL</label>
-        <input value={form.imageUrl} onChange={(e) => update("imageUrl", e.target.value)}
-          className="w-full px-3 py-2.5 rounded-lg bg-[#0A0A0B] border border-white/10 text-sm" placeholder="https://..." />
+        <label className="block text-xs text-white/50 mb-1">Photos</label>
+        <label className="flex items-center justify-center gap-2 px-3 py-3 rounded-lg bg-[#0A0A0B] border border-dashed border-white/20 text-sm text-white/60 cursor-pointer">
+          {uploading ? "Uploading..." : "+ Select photos from gallery"}
+          <input type="file" accept="image/*" multiple className="hidden" onChange={handleFilesSelected} disabled={uploading} />
+        </label>
+
+        {images.length > 0 && (
+          <div className="grid grid-cols-4 gap-2 mt-3">
+            {images.map((url) => (
+              <div key={url} className="relative aspect-square rounded-lg overflow-hidden border border-white/10">
+                <img src={url} alt="" className="w-full h-full object-cover" />
+                <button type="button" onClick={() => removeImage(url)}
+                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-white text-xs flex items-center justify-center">
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div>
@@ -108,7 +154,9 @@ export default function ProductForm({ categories, initial }: Props) {
         </select>
       </div>
 
-      <button type="submit" disabled={saving} className="mt-2 py-2.5 rounded-lg bg-lime-400 text-black font-bold text-sm disabled:opacity-50">
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+
+      <button type="submit" disabled={saving || uploading} className="mt-2 py-2.5 rounded-lg bg-lime-400 text-black font-bold text-sm disabled:opacity-50">
         {saving ? "Saving..." : initial ? "Save Changes" : "Add Product"}
       </button>
     </form>
