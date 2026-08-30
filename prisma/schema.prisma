@@ -37,20 +37,22 @@ model Category {
 }
 
 model Product {
-  id          String      @id @default(cuid())
-  name        String
-  description String?
-  price       Int
-  mrp         Int?
-  size        String?
-  stock       Int         @default(0)
-  imageUrl    String?
-  images      String[]    @default([])
-  categoryId  String
-  category    Category    @relation(fields: [categoryId], references: [id])
-  orderItems  OrderItem[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id            String      @id @default(cuid())
+  name          String
+  description   String?
+  price         Int
+  mrp           Int?
+  size          String?
+  stock         Int         @default(0)
+  stockOutlet1  Int         @default(0)
+  stockOutlet2  Int         @default(0)
+  imageUrl      String?
+  images        String[]    @default([])
+  categoryId    String
+  category      Category    @relation(fields: [categoryId], references: [id])
+  orderItems    OrderItem[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 model Order {
