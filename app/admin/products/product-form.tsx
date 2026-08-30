@@ -13,7 +13,8 @@ type Props = {
     price: number;
     mrp: number | null;
     size: string | null;
-    stock: number;
+    stockOutlet1: number;
+    stockOutlet2: number;
     imageUrl: string | null;
     images: string[];
     categoryId: string;
@@ -28,7 +29,8 @@ export default function ProductForm({ categories, initial }: Props) {
     price: initial?.price ?? 0,
     mrp: initial?.mrp ?? 0,
     size: initial?.size || "",
-    stock: initial?.stock ?? 0,
+    stockOutlet1: initial?.stockOutlet1 ?? 0,
+    stockOutlet2: initial?.stockOutlet2 ?? 0,
     categoryId: initial?.categoryId || categories[0]?.id || "",
   });
   const [images, setImages] = useState<string[]>(initial?.images || []);
@@ -45,18 +47,14 @@ export default function ProductForm({ categories, initial }: Props) {
     if (!files || files.length === 0) return;
     setUploading(true);
     setError("");
-
     const uploaded: string[] = [];
     for (const file of Array.from(files)) {
       const fd = new FormData();
       fd.append("file", file);
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       const data = await res.json();
-      if (res.ok) {
-        uploaded.push(data.url);
-      } else {
-        setError(data.error || "Upload failed for one of the images");
-      }
+      if (res.ok) uploaded.push(data.url);
+      else setError(data.error || "Upload failed for one of the images");
     }
     setImages((prev) => [...prev, ...uploaded]);
     setUploading(false);
@@ -72,10 +70,11 @@ export default function ProductForm({ categories, initial }: Props) {
     setSaving(true);
     const url = initial ? `/api/products/${initial.id}` : "/api/products";
     const method = initial ? "PUT" : "POST";
+    const stock = Number(form.stockOutlet1) + Number(form.stockOutlet2);
     await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, images, imageUrl: images[0] || null }),
+      body: JSON.stringify({ ...form, stock, images, imageUrl: images[0] || null }),
     });
     setSaving(false);
     router.push("/admin/products");
@@ -109,15 +108,21 @@ export default function ProductForm({ categories, initial }: Props) {
         </div>
       </div>
 
+      <div>
+        <label className="block text-xs text-white/50 mb-1">Size (e.g. 1kg)</label>
+        <input value={form.size} onChange={(e) => update("size", e.target.value)}
+          className="w-full px-3 py-2.5 rounded-lg bg-[#0A0A0B] border border-white/10 text-sm" />
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs text-white/50 mb-1">Size (e.g. 1kg)</label>
-          <input value={form.size} onChange={(e) => update("size", e.target.value)}
-            className="w-full px-3 py-2.5 rounded-lg bg-[#0A0A0B] border border-white/10 text-sm" />
+          <label className="block text-xs text-white/50 mb-1">Stock — Kulgam Town</label>
+          <input type="number" value={form.stockOutlet1} onChange={(e) => update("stockOutlet1", Number(e.target.value))}
+            className="w-full px-3 py-2.5 rounded-lg bg-[#0A0A0B] border border-white/10 text-sm" required />
         </div>
         <div>
-          <label className="block text-xs text-white/50 mb-1">Stock</label>
-          <input type="number" value={form.stock} onChange={(e) => update("stock", Number(e.target.value))}
+          <label className="block text-xs text-white/50 mb-1">Stock — D.H. Pora</label>
+          <input type="number" value={form.stockOutlet2} onChange={(e) => update("stockOutlet2", Number(e.target.value))}
             className="w-full px-3 py-2.5 rounded-lg bg-[#0A0A0B] border border-white/10 text-sm" required />
         </div>
       </div>
@@ -128,16 +133,13 @@ export default function ProductForm({ categories, initial }: Props) {
           {uploading ? "Uploading..." : "+ Select photos from gallery"}
           <input type="file" accept="image/*" multiple className="hidden" onChange={handleFilesSelected} disabled={uploading} />
         </label>
-
         {images.length > 0 && (
           <div className="grid grid-cols-4 gap-2 mt-3">
             {images.map((url) => (
               <div key={url} className="relative aspect-square rounded-lg overflow-hidden border border-white/10">
                 <img src={url} alt="" className="w-full h-full object-cover" />
                 <button type="button" onClick={() => removeImage(url)}
-                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-white text-xs flex items-center justify-center">
-                  ×
-                </button>
+                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-white text-xs flex items-center justify-center">×</button>
               </div>
             ))}
           </div>
@@ -148,9 +150,7 @@ export default function ProductForm({ categories, initial }: Props) {
         <label className="block text-xs text-white/50 mb-1">Category</label>
         <select value={form.categoryId} onChange={(e) => update("categoryId", e.target.value)}
           className="w-full px-3 py-2.5 rounded-lg bg-[#0A0A0B] border border-white/10 text-sm">
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
+          {categories.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
         </select>
       </div>
 
@@ -161,4 +161,4 @@ export default function ProductForm({ categories, initial }: Props) {
       </button>
     </form>
   );
-  }
+    }
