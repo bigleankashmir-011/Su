@@ -85,6 +85,7 @@ model Event {
   title     String
   subtitle  String?
   ctaLabel  String   @default("Notify Me")
+  images    String[] @default([])
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
