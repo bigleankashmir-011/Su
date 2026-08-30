@@ -77,3 +77,23 @@ model OrderItem {
   quantity  Int
   price     Int
 }
+
+model Event {
+  id        String   @id @default(cuid())
+  title     String
+  subtitle  String?
+  ctaLabel  String   @default("Notify Me")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Coupon {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  discountType  String   @default("PERCENT")
+  discountValue Int
+  active        Boolean  @default(true)
+  usageCount    Int      @default(0)
+  createdAt     DateTime @default(now())
+}
