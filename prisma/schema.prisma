@@ -99,3 +99,16 @@ model Coupon {
   usageCount    Int      @default(0)
   createdAt     DateTime @default(now())
 }
+
+model SiteSettings {
+  id          String   @id @default("main")
+  instagram   String?
+  facebook    String?
+  whatsapp    String?
+  phone1      String?
+  phone2      String?
+  outlet1     String?
+  outlet2     String?
+  aboutText   String?
+  updatedAt   DateTime @updatedAt
+}
