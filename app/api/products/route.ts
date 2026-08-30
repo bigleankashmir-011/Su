@@ -24,10 +24,12 @@ export async function POST(req: NextRequest) {
       mrp: body.mrp ? Number(body.mrp) : null,
       size: body.size || null,
       stock: Number(body.stock) || 0,
+      stockOutlet1: Number(body.stockOutlet1) || 0,
+      stockOutlet2: Number(body.stockOutlet2) || 0,
       imageUrl: body.imageUrl || null,
       images: body.images || [],
       categoryId: body.categoryId,
     },
   });
   return NextResponse.json(product);
-      }
+}
