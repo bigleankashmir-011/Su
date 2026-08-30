@@ -62,6 +62,8 @@ model Order {
   pincode       String
   paymentMethod String      @default("COD")
   status        OrderStatus @default(PENDING)
+  couponCode    String?
+  discount      Int         @default(0)
   total         Int
   items         OrderItem[]
   createdAt     DateTime    @default(now())
