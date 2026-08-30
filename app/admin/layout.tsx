@@ -11,6 +11,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: "/admin", label: "Dashboard" },
     { href: "/admin/products", label: "Products" },
     { href: "/admin/orders", label: "Orders" },
+    { href: "/admin/events", label: "Events" },
+    { href: "/admin/coupons", label: "Coupons" },
     ...(role === "ADMIN" ? [{ href: "/admin/staff", label: "Staff Logins" }] : []),
   ];
 
@@ -42,4 +44,4 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <main className="flex-1 p-5 sm:p-8">{children}</main>
     </div>
   );
-}
+    }
