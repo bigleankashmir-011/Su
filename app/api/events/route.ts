@@ -18,8 +18,9 @@ export async function POST(req: NextRequest) {
       title: body.title,
       subtitle: body.subtitle || null,
       ctaLabel: body.ctaLabel || "Notify Me",
+      images: body.images || [],
       active: body.active ?? true,
     },
   });
   return NextResponse.json(event);
-}
+        }
