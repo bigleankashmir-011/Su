@@ -8,6 +8,7 @@ type Product = {
   category: { name: string; slug: string };
 };
 type CartItem = { id: string; name: string; price: number; qty: number; image: string | null };
+type EventBanner = { title: string; subtitle: string | null; ctaLabel: string };
 
 function loadCart(): CartItem[] {
   if (typeof window === "undefined") return [];
@@ -21,9 +22,17 @@ export default function StorePage() {
   const [drawer, setDrawer] = useState<"closed" | "cart" | "checkout" | "success">("closed");
   const [form, setForm] = useState({ customerName: "", phone: "", address: "", city: "", pincode: "" });
   const [placing, setPlacing] = useState(false);
+  const [event, setEvent] = useState<EventBanner | null>(null);
+  const [couponInput, setCouponInput] = useState("");
+  const [couponApplied, setCouponApplied] = useState<{ code: string; discount: number } | null>(null);
+  const [couponError, setCouponError] = useState("");
 
   useEffect(() => {
     fetch("/api/products").then(r => r.json()).then(setProducts).catch(() => {});
+    fetch("/api/events").then(r => r.json()).then((evs: any[]) => {
+      const active = evs.find(e => e.active);
+      if (active) setEvent(active);
+    }).catch(() => {});
     setCart(loadCart());
   }, []);
   useEffect(() => { localStorage.setItem("bl_cart", JSON.stringify(cart)); }, [cart]);
@@ -31,7 +40,9 @@ export default function StorePage() {
   const categories = Array.from(new Set(products.map(p => p.category?.name).filter(Boolean)));
   const shown = activeCat === "all" ? products : products.filter(p => p.category?.name === activeCat);
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
-  const cartTotal = cart.reduce((s, i) => s + i.qty * i.price, 0);
+  const subtotal = cart.reduce((s, i) => s + i.qty * i.price, 0);
+  const discount = couponApplied?.discount || 0;
+  const cartTotal = Math.max(0, subtotal - discount);
 
   function addToCart(p: Product) {
     setCart(c => {
@@ -44,6 +55,16 @@ export default function StorePage() {
     setCart(c => c.map(i => i.id === id ? { ...i, qty: i.qty + delta } : i).filter(i => i.qty > 0));
   }
 
+  async function applyCoupon() {
+    setCouponError("");
+    if (!couponInput.trim()) return;
+    const res = await fetch(`/api/coupons/validate?code=${encodeURIComponent(couponInput.trim())}`);
+    const data = await res.json();
+    if (!res.ok) { setCouponError(data.error || "Invalid coupon"); setCouponApplied(null); return; }
+    const disc = data.discountType === "PERCENT" ? Math.round((subtotal * data.discountValue) / 100) : data.discountValue;
+    setCouponApplied({ code: data.code, discount: Math.min(disc, subtotal) });
+  }
+
   async function placeOrder() {
     if (!form.customerName || !form.phone || !form.address || !form.city || !form.pincode) {
       alert("Please fill all delivery details.");
@@ -53,10 +74,12 @@ export default function StorePage() {
     await fetch("/api/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, items: cart.map(i => ({ productId: i.id, quantity: i.qty })) }),
+      body: JSON.stringify({ ...form, couponCode: couponApplied?.code || null, items: cart.map(i => ({ productId: i.id, quantity: i.qty })) }),
     });
     setPlacing(false);
     setCart([]);
+    setCouponApplied(null);
+    setCouponInput("");
     setDrawer("success");
   }
 
@@ -79,12 +102,14 @@ export default function StorePage() {
         <div className="mx-4 mb-3.5 bg-[#FAFAFA] border border-[#ECECEE] rounded-[10px] px-3.5 py-2.5 text-[13px] text-[#6B6B72]">🔍 Search whey, creatine, gainers...</div>
       </header>
 
-      <div className="mx-4 mt-3.5 rounded-2xl bg-gradient-to-br from-[#141414] to-black p-[18px] relative overflow-hidden">
-        <span className="inline-flex items-center gap-1 bg-[#FFB800] text-black text-[9.5px] font-extrabold tracking-wider px-2.5 py-1 rounded-full">📅 UPCOMING EVENT</span>
-        <p className="text-white text-lg font-black mt-2.5 leading-tight">Grand Store Anniversary Sale</p>
-        <p className="text-[#c8c8ca] text-[11.5px] mt-1.5">Flat discounts across Whey, Creatine &amp; Gainers — dates announced soon.</p>
-        <button className="inline-block mt-3 bg-[#FFB800] text-black font-extrabold text-xs px-4 py-2 rounded-full">Notify Me</button>
-      </div>
+      {event && (
+        <div className="mx-4 mt-3.5 rounded-2xl bg-gradient-to-br from-[#141414] to-black p-[18px] relative overflow-hidden">
+          <span className="inline-flex items-center gap-1 bg-[#FFB800] text-black text-[9.5px] font-extrabold tracking-wider px-2.5 py-1 rounded-full">📅 UPCOMING EVENT</span>
+          <p className="text-white text-lg font-black mt-2.5 leading-tight">{event.title}</p>
+          {event.subtitle && <p className="text-[#c8c8ca] text-[11.5px] mt-1.5">{event.subtitle}</p>}
+          <button className="inline-block mt-3 bg-[#FFB800] text-black font-extrabold text-xs px-4 py-2 rounded-full">{event.ctaLabel}</button>
+        </div>
+      )}
 
       <div className="grid grid-cols-4 border-t border-b border-[#ECECEE] mt-4">
         {[["🛡️","Safe & Secure Payments"],["🚚","Fast Delivery Pan-India"],["✅","Authenticity Guaranteed"],["↩️","Easy Replacement"]].map(([ic,label],i)=>(
@@ -189,9 +214,21 @@ export default function StorePage() {
                         <p className="font-black text-[13px]">₹{i.price*i.qty}</p>
                       </div>
                     ))}
+
+                  <div className="mt-4">
+                    <label className="text-[11px] text-[#6B6B72] font-bold">Coupon Code</label>
+                    <div className="flex gap-2 mt-1.5">
+                      <input value={couponInput} onChange={e=>setCouponInput(e.target.value)} placeholder="Enter code"
+                        className="flex-1 bg-[#FAFAFA] border border-[#ECECEE] rounded-lg px-3 py-2 text-sm" />
+                      <button onClick={applyCoupon} className="bg-black text-[#FFB800] font-extrabold text-xs px-4 rounded-lg">Apply</button>
+                    </div>
+                    {couponApplied && <p className="text-[#1a9b52] text-xs mt-1.5 font-bold">✓ "{couponApplied.code}" applied — ₹{couponApplied.discount} off</p>}
+                    {couponError && <p className="text-red-500 text-xs mt-1.5">{couponError}</p>}
+                  </div>
                 </div>
                 <div className="border-t border-[#ECECEE] p-4">
-                  <div className="flex justify-between text-[12.5px] text-[#6B6B72] mb-1.5"><span>Subtotal</span><span>₹{cartTotal}</span></div>
+                  <div className="flex justify-between text-[12.5px] text-[#6B6B72] mb-1.5"><span>Subtotal</span><span>₹{subtotal}</span></div>
+                  {discount > 0 && <div className="flex justify-between text-[12.5px] text-[#1a9b52] mb-1.5"><span>Coupon Discount</span><span>−₹{discount}</span></div>}
                   <div className="flex justify-between text-sm font-black mt-2 mb-3"><span>To Pay</span><span>₹{cartTotal}</span></div>
                   <button onClick={()=>setDrawer("checkout")} disabled={cart.length===0} className="w-full bg-[#FFB800] font-extrabold text-[13.5px] py-3.5 rounded-xl disabled:opacity-40">Proceed to Checkout</button>
                 </div>
@@ -210,6 +247,7 @@ export default function StorePage() {
                 <input value={form.city} onChange={e=>setForm({...form,city:e.target.value})} className="bg-[#FAFAFA] border border-[#ECECEE] rounded-lg px-3 py-2.5 text-sm" />
                 <label className="text-[11px] text-[#6B6B72] font-bold">Pincode</label>
                 <input value={form.pincode} onChange={e=>setForm({...form,pincode:e.target.value})} className="bg-[#FAFAFA] border border-[#ECECEE] rounded-lg px-3 py-2.5 text-sm" />
+                {discount > 0 && <p className="text-[#1a9b52] text-xs font-bold">Coupon "{couponApplied?.code}" applied — ₹{discount} off</p>}
                 <div className="text-[11px] text-[#8a5c00] bg-[#FFF3D6] px-2.5 py-2 rounded-lg mt-1">💵 Pay on Delivery — no online payment needed right now.</div>
                 <button onClick={placeOrder} disabled={placing} className="mt-1 bg-[#FFB800] font-extrabold text-[13.5px] py-3.5 rounded-xl disabled:opacity-50">{placing?"Placing Order...":`Place Order — ₹${cartTotal} COD`}</button>
               </div>
@@ -228,4 +266,4 @@ export default function StorePage() {
       )}
     </div>
   );
-            }
+    }
