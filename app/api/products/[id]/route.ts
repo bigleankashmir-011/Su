@@ -3,22 +3,20 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const product = await prisma.product.findUnique({
-    where: { id: params.id },
+export async function GET() {
+  const products = await prisma.product.findMany({
     include: { category: true },
+    orderBy: { createdAt: "desc" },
   });
-  if (!product) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(product);
+  return NextResponse.json(products);
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const product = await prisma.product.update({
-    where: { id: params.id },
+  const product = await prisma.product.create({
     data: {
       name: body.name,
       description: body.description || null,
@@ -26,18 +24,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       mrp: body.mrp ? Number(body.mrp) : null,
       size: body.size || null,
       stock: Number(body.stock) || 0,
+      stockOutlet1: Number(body.stockOutlet1) || 0,
+      stockOutlet2: Number(body.stockOutlet2) || 0,
       imageUrl: body.imageUrl || null,
       images: body.images || [],
       categoryId: body.categoryId,
     },
   });
   return NextResponse.json(product);
-}
-
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  await prisma.product.delete({ where: { id: params.id } });
-  return NextResponse.json({ ok: true });
     }
