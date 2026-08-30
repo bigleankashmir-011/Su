@@ -11,10 +11,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const event = await prisma.event.update({
     where: { id: params.id },
     data: {
-      title: body.title,
-      subtitle: body.subtitle || null,
-      ctaLabel: body.ctaLabel || "Notify Me",
-      active: body.active,
+      ...(body.title !== undefined ? { title: body.title } : {}),
+      ...(body.subtitle !== undefined ? { subtitle: body.subtitle || null } : {}),
+      ...(body.ctaLabel !== undefined ? { ctaLabel: body.ctaLabel } : {}),
+      ...(body.images !== undefined ? { images: body.images } : {}),
+      ...(body.active !== undefined ? { active: body.active } : {}),
     },
   });
   return NextResponse.json(event);
@@ -26,4 +27,4 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
 
   await prisma.event.delete({ where: { id: params.id } });
   return NextResponse.json({ ok: true });
-            }
+}
