@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import AddStaffForm from "./add-staff-form";
 import DeleteStaffButton from "./delete-staff-button";
