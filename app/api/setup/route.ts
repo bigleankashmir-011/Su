@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
@@ -14,11 +15,12 @@ export async function GET(req: Request) {
   const password = process.env.FIRST_ADMIN_PASSWORD || "";
   const name = process.env.FIRST_ADMIN_NAME || "Owner";
 
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (!existing) {
-    const hashed = await bcrypt.hash(password, 10);
-    await prisma.user.create({ data: { name, email, password: hashed, role: "ADMIN" } });
-  }
+  const hashed = await bcrypt.hash(password, 10);
+  await prisma.user.upsert({
+    where: { email },
+    update: { password: hashed, role: "ADMIN" },
+    create: { name, email, password: hashed, role: "ADMIN" },
+  });
 
   const categories = ["Whey Protein", "Creatine", "Pre-Workout", "Mass Gainer", "Vitamins", "Equipment"];
   for (const catName of categories) {
@@ -30,5 +32,5 @@ export async function GET(req: Request) {
     });
   }
 
-  return NextResponse.json({ ok: true, message: "Admin and categories are ready. You can now log in." });
-      }
+  return NextResponse.json({ ok: true, message: "Admin password has been reset. You can now log in." });
+    }
