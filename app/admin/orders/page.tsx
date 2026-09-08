@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import StatusSelect from "./status-select";
+import ReturnSelect from "./return-select";
 
 export default async function OrdersPage() {
   const orders = await prisma.order.findMany({
@@ -19,8 +20,12 @@ export default async function OrdersPage() {
                 <p className="font-semibold">{o.customerName} · {o.phone}</p>
                 <p className="text-white/40 text-xs mt-1">{o.address}, {o.city} - {o.pincode}</p>
                 <p className="text-white/30 text-xs mt-1">{o.paymentMethod} · {new Date(o.createdAt).toLocaleString("en-IN")}</p>
+                <p className="text-white/20 text-[10px] font-mono mt-1 break-all">ID: {o.id}</p>
               </div>
-              <StatusSelect orderId={o.id} status={o.status} />
+              <div className="flex flex-col gap-2 items-end shrink-0">
+                <StatusSelect orderId={o.id} status={o.status} />
+                {o.returnStatus !== "NONE" && <ReturnSelect orderId={o.id} returnStatus={o.returnStatus} reason={o.returnReason} />}
+              </div>
             </div>
             <div className="mt-4 border-t border-white/5 pt-3 flex flex-col gap-1">
               {o.items.map((i) => (
@@ -40,4 +45,4 @@ export default async function OrdersPage() {
       </div>
     </div>
   );
-                  }
+                }
