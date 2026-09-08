@@ -125,3 +125,10 @@ model SiteSettings {
   aboutText   String?
   updatedAt   DateTime @updatedAt
 }
+
+model PageView {
+  id        String   @id @default(cuid())
+  path      String
+  source    String?
+  createdAt DateTime @default(now())
+}
