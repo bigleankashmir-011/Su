@@ -33,6 +33,14 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
       });
     });
     setCartCount(loadCart().reduce((s, i) => s + i.qty, 0));
+
+    let source = "direct";
+    try { if (document.referrer) source = new URL(document.referrer).hostname; } catch {}
+    fetch("/api/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: `/product/${params.id}`, source }),
+    }).catch(() => {});
   }, [params.id]);
 
   function addToCart() {
