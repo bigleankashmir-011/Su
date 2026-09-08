@@ -35,6 +35,14 @@ export default function StorePage() {
       if (active) setEvent(active);
     }).catch(() => {});
     setCart(loadCart());
+
+    let source = "direct";
+    try { if (document.referrer) source = new URL(document.referrer).hostname; } catch {}
+    fetch("/api/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: "/", source }),
+    }).catch(() => {});
   }, []);
   useEffect(() => { localStorage.setItem("bl_cart", JSON.stringify(cart)); }, [cart]);
 
