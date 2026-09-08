@@ -9,6 +9,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const links = [
     { href: "/admin", label: "Dashboard" },
+    { href: "/admin/analytics", label: "Analytics" },
     { href: "/admin/products", label: "Products" },
     { href: "/admin/orders", label: "Orders" },
     { href: "/admin/events", label: "Events" },
@@ -45,4 +46,4 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <main className="flex-1 p-5 sm:p-8">{children}</main>
     </div>
   );
-}
+    }
