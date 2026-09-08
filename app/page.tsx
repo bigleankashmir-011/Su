@@ -26,6 +26,7 @@ export default function StorePage() {
   const [couponInput, setCouponInput] = useState("");
   const [couponApplied, setCouponApplied] = useState<{ code: string; discount: number } | null>(null);
   const [couponError, setCouponError] = useState("");
+  const [lastOrderId, setLastOrderId] = useState("");
 
   useEffect(() => {
     fetch("/api/products").then(r => r.json()).then(setProducts).catch(() => {});
@@ -71,12 +72,14 @@ export default function StorePage() {
       return;
     }
     setPlacing(true);
-    await fetch("/api/orders", {
+    const res = await fetch("/api/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...form, couponCode: couponApplied?.code || null, items: cart.map(i => ({ productId: i.id, quantity: i.qty })) }),
     });
+    const data = await res.json();
     setPlacing(false);
+    setLastOrderId(data.id || "");
     setCart([]);
     setCouponApplied(null);
     setCouponInput("");
@@ -94,10 +97,13 @@ export default function StorePage() {
               <p className="text-[8.5px] font-bold tracking-[.18em] text-[#6B6B72] mt-0.5">SUPPLEMENTS · KASHMIR</p>
             </div>
           </div>
-          <button onClick={() => setDrawer("cart")} className="w-9 h-9 rounded-full bg-[#FAFAFA] flex items-center justify-center relative text-base">
-            🛍️
-            {cartCount > 0 && <span className="absolute -top-0.5 -right-0.5 bg-[#FFB800] text-black text-[9px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">{cartCount}</span>}
-          </button>
+          <div className="flex items-center gap-2">
+            <Link href="/track" className="text-[11px] font-bold text-[#6B6B72] underline">Track Order</Link>
+            <button onClick={() => setDrawer("cart")} className="w-9 h-9 rounded-full bg-[#FAFAFA] flex items-center justify-center relative text-base">
+              🛍️
+              {cartCount > 0 && <span className="absolute -top-0.5 -right-0.5 bg-[#FFB800] text-black text-[9px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">{cartCount}</span>}
+            </button>
+          </div>
         </div>
         <div className="mx-4 mb-3.5 bg-[#FAFAFA] border border-[#ECECEE] rounded-[10px] px-3.5 py-2.5 text-[13px] text-[#6B6B72]">🔍 Search whey, creatine, gainers...</div>
       </header>
@@ -257,8 +263,13 @@ export default function StorePage() {
               <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
                 <div className="w-[58px] h-[58px] rounded-full bg-black text-[#FFB800] text-2xl flex items-center justify-center mb-4">✓</div>
                 <h3 className="text-base font-black">Order Placed!</h3>
-                <p className="text-xs text-[#6B6B72] mt-1.5">We'll call you to confirm delivery. Thank you for shopping with Big Lean Kashmir.</p>
-                <button onClick={()=>setDrawer("closed")} className="mt-6 bg-black text-[#FFB800] font-extrabold text-xs px-5 py-2.5 rounded-full">Continue Shopping</button>
+                <p className="text-xs text-[#6B6B72] mt-3">Your Order ID:</p>
+                <p className="font-mono text-[11px] font-bold bg-[#FAFAFA] border border-[#ECECEE] rounded-lg px-3 py-2 mt-1 break-all max-w-full">{lastOrderId}</p>
+                <p className="text-xs text-[#6B6B72] mt-3">Save this ID to track your order later. We'll call you to confirm delivery.</p>
+                <div className="flex gap-2 mt-6">
+                  <Link href="/track" className="bg-black text-[#FFB800] font-extrabold text-xs px-5 py-2.5 rounded-full">Track Order</Link>
+                  <button onClick={()=>setDrawer("closed")} className="border-2 border-black font-extrabold text-xs px-5 py-2.5 rounded-full">Continue Shopping</button>
+                </div>
               </div>
             )}
           </div>
