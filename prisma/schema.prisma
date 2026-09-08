@@ -20,6 +20,14 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum ReturnStatus {
+  NONE
+  REQUESTED
+  APPROVED
+  REJECTED
+  REFUNDED
+}
+
 model User {
   id        String   @id @default(cuid())
   name      String
@@ -56,20 +64,22 @@ model Product {
 }
 
 model Order {
-  id            String      @id @default(cuid())
+  id            String       @id @default(cuid())
   customerName  String
   phone         String
   address       String
   city          String
   pincode       String
-  paymentMethod String      @default("COD")
-  status        OrderStatus @default(PENDING)
+  paymentMethod String       @default("COD")
+  status        OrderStatus  @default(PENDING)
   couponCode    String?
-  discount      Int         @default(0)
+  discount      Int          @default(0)
+  returnStatus  ReturnStatus @default(NONE)
+  returnReason  String?
   total         Int
   items         OrderItem[]
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
 
 model OrderItem {
