@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -8,9 +9,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const order = await prisma.order.update({
-    where: { id: params.id },
-    data: { status: body.status },
-  });
+  const data: any = {};
+  if (body.status !== undefined) data.status = body.status;
+  if (body.returnStatus !== undefined) data.returnStatus = body.returnStatus;
+
+  const order = await prisma.order.update({ where: { id: params.id }, data });
   return NextResponse.json(order);
 }
